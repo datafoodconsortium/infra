@@ -16,7 +16,7 @@ add the associated SSH key to your ssh-agent:
 ssh-add /path/to/ssh/private/key/giving/you/access/to/instance
 ```
 
-3. Deploy remotely to your instance:
+3. Deploy to your instance:
 ```sh
 ./deploy-remote.sh <INSTANCE_PUBLIC_IP>
 ```
