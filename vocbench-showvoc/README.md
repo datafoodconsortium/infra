@@ -21,8 +21,8 @@ ssh-add /path/to/ssh/private/key/giving/you/access/to/instance
 ./deploy-remote.sh <INSTANCE_PUBLIC_IP>
 ```
 
-4. Via OVH manager, add two DNS "A" records to your DNS zone, to
-link your domain names to your instance's public IP.
+4. Via OVH manager, add two DNS records of type "A" to your DNS zone, to
+link your (sub)domains to your instance's public IP.
 
 ## Local
 
