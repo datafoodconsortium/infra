@@ -1,0 +1,96 @@
+services:
+
+  traefik:
+    image: traefik:v2.6.2
+    container_name: traefik
+    restart: always
+    depends_on:
+      - vocbench
+      - showvoc
+    command:
+      - "--log.level=INFO"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=tech@data-players.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory" # temp: migration 20241114 (imbrou)
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  showvoc:
+    image: "showvoc:${SV_VERSION}"
+    container_name: showvoc
+    build:
+      context: "${SV_CLONE_DIR}/${SV_VERSION}"
+    restart: always
+    volumes:
+      - "./volumes/showvoc/data:/opt/showvoc/data"
+    ports:
+      - "1980:1983"
+    environment:
+      JAVA_MAX_MEM: 1024M
+      JAVA_MIN_MEM: 128M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.showvoc.rule=Host(`${SV_DOMAIN}`)"
+      - "traefik.http.routers.showvoc.entrypoints=websecure"
+      - "traefik.http.routers.showvoc.tls.certresolver=myresolver"
+#     - "traefik.http.routers.showvoc.middlewares=showvoc-add-prefix"
+#     - "traefik.http.middlewares.showvoc-add-prefix.addprefix.prefix=/showvoc/"
+
+  vocbench:
+    image: "vocbench3:${VB_VERSION}"
+    container_name: vocbench
+    restart: always
+    build:
+      context: "${VB_CLONE_DIR}/${VB_VERSION}"
+      args:
+        vb_version: "${VB_VERSION}"
+        st_version: "${ST_VERSION}"
+    depends_on:
+      - vocbench-graphdb
+    ports:
+      - "1979:1979"
+    volumes:
+      - ./volumes/vocbench/stdata:/opt/vocbench3/data
+    environment:
+      JAVA_MAX_MEM: 1024M
+      JAVA_MIN_MEM: 128M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vocbench.rule=Host(`${VB_DOMAIN}`)"
+      - "traefik.http.routers.vocbench.entrypoints=websecure"
+      - "traefik.http.routers.vocbench.tls.certresolver=myresolver"
+#     - "traefik.http.routers.vocbench.middlewares=add-vocbench"
+#     - "traefik.http.middlewares.add-vocbench.addprefix.prefix=/vocbench3"
+
+  vocbench-graphdb:
+    image: "graphdb-with-st-sails:${GDB_VERSION}"
+    container_name: vocbench-graphdb
+    restart: always
+    build:
+      context: "${VB_CLONE_DIR}/helpers/graphdb-with-st-sails"
+      args:
+        vb_version: "${VB_VERSION}"
+        st_version: "${ST_VERSION}"
+        gdb_version: "${GDB_VERSION}"
+    ports:
+      - "127.0.0.1:7200:7200"
+    volumes:
+      - ./volumes/vocbench-graphdb/gdbhome:/opt/graphdb/home
+    environment:
+      GDB_MAX_MEM: 4096M
+      GDB_MIN_MEM: 1024M
+
