@@ -34,6 +34,8 @@ fi
 docker compose up -d --build
 
 echo "🍺 ShowVoc and VocBench are deployed."
+echo
+echo "If you have added the necessary DNS records, just open:"
 echo "   https://${VB_DOMAIN}/vocbench3"
 echo "   https://${SV_DOMAIN}/showvoc"
 
