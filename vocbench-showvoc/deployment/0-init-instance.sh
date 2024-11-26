@@ -17,7 +17,7 @@ set -euo pipefail                                  # https://bit.ly/eouxpipefail
 
 # Update the system
 echo "Updating system packages..."
-sudo apt update && sudo apt upgrade -y
+sudo apt update
 
 # Install locales, git, and remove apache2 if installed
 sudo apt install locales-all git-all -y
@@ -55,26 +55,21 @@ else
     echo "Installing Docker Engine and Docker Compose..."
     sudo apt update
     sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-fi
 
-# Add the current user to the Docker group if not already a member
-nonroot_user=$(awk -F: '$3 >= 1000 && $3 < 60000 {print $1; exit}' /etc/passwd)
-if ! groups $nonroot_user | grep -q "\bdocker\b"; then
+    # Add user to the docker group
+    nonroot_user=$(awk -F: '$3 >= 1000 && $3 < 60000 {print $1; exit}' /etc/passwd)
     echo "Adding user to the Docker group..."
     sudo usermod -aG docker $nonroot_user
+
+    # Use GCR mirror of Docker Hub to prevent rate limiting errors with OVH
+    echo '{ "registry-mirrors": ["https://mirror.gcr.io"] }' \
+        | sudo tee /etc/docker/daemon.json
+    sudo systemctl restart docker
+
+    # Verify Docker installation
+    echo "Verifying Docker installation..."
+    docker --version && docker compose version
 fi
-
-# Use GCR mirror of Docker Hub to prevent rate limiting errors with OVH
-sudo tee /etc/docker/daemon.json <<EOF
-{
-  "registry-mirrors": ["https://mirror.gcr.io"]
-}
-EOF
-sudo systemctl restart docker
-
-# Verify Docker installation
-echo "Verifying Docker installation..."
-docker --version && docker compose version
 
 echo "✅ Instance initialization complete!"
 exit 0
