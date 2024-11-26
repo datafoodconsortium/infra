@@ -1,5 +1,6 @@
 services:
 
+  # Reverse proxy
   traefik:
     image: traefik:v2.6.2
     container_name: traefik
@@ -7,27 +8,34 @@ services:
     depends_on:
       - vocbench
       - showvoc
-    command:
-      - "--log.level=INFO"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=tech@data-players.com"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.myresolver.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory" # temp: migration 20241114 (imbrou)
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
     volumes:
+      - "./logs:/logs"
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    command:
+      # Logs configuration
+      - "--log.level=DEBUG"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/logs/access.log"
+      # Docker provider
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # HTTP => HTTPS redirection
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      # HTTPS certificate generation
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=tech@data-players.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory" # temp: migration 20241114 (imbrou)
 
   showvoc:
     image: "showvoc:${SV_VERSION}"
@@ -47,8 +55,16 @@ services:
       - "traefik.http.routers.showvoc.rule=Host(`${SV_DOMAIN}`)"
       - "traefik.http.routers.showvoc.entrypoints=websecure"
       - "traefik.http.routers.showvoc.tls.certresolver=myresolver"
-#     - "traefik.http.routers.showvoc.middlewares=showvoc-add-prefix"
-#     - "traefik.http.middlewares.showvoc-add-prefix.addprefix.prefix=/showvoc/"
+      # Redirect from showvoc.datafoodconsortium.org
+      - "traefik.http.middlewares.showvoc-from-fr.redirectregex.regex=^https?://showvoc\\.datafoodconsortium\\.org(.*)"
+      - "traefik.http.middlewares.showvoc-from-fr.redirectregex.replacement=https://${SV_DOMAIN}$$1"
+      - "traefik.http.middlewares.showvoc-from-fr.redirectregex.permanent=true"
+      - "traefik.http.routers.showvoc-fr.rule=Host(`showvoc.datafoodconsortium.org`)"
+      - "traefik.http.routers.showvoc-fr.middlewares=showvoc-from-fr"
+      - "traefik.http.routers.showvoc-fr.entrypoints=websecure"
+#     - "traefik.http.routers.showvoc-fr.tls=true"
+#     - "traefik.http.routers.showvoc-fr.tls.certresolver=myresolver"
+#     TODO: Migrate DNS, then uncomment and test.
 
   vocbench:
     image: "vocbench3:${VB_VERSION}"
@@ -73,8 +89,16 @@ services:
       - "traefik.http.routers.vocbench.rule=Host(`${VB_DOMAIN}`)"
       - "traefik.http.routers.vocbench.entrypoints=websecure"
       - "traefik.http.routers.vocbench.tls.certresolver=myresolver"
-#     - "traefik.http.routers.vocbench.middlewares=add-vocbench"
-#     - "traefik.http.middlewares.add-vocbench.addprefix.prefix=/vocbench3"
+      # Redirect from vocbench.datafoodconsortium.org
+      - "traefik.http.middlewares.vocbench-from-fr.redirectregex.regex=^https?://vocbench\\.datafoodconsortium\\.org(.*)"
+      - "traefik.http.middlewares.vocbench-from-fr.redirectregex.replacement=https://${VB_DOMAIN}$$1"
+      - "traefik.http.middlewares.vocbench-from-fr.redirectregex.permanent=true"
+      - "traefik.http.routers.vocbench-fr.rule=Host(`vocbench.datafoodconsortium.org`)"
+      - "traefik.http.routers.vocbench-fr.middlewares=vocbench-from-fr"
+      - "traefik.http.routers.vocbench-fr.entrypoints=websecure"
+#     - "traefik.http.routers.vocbench-fr.tls=true"
+#     - "traefik.http.routers.vocbench-fr.tls.certresolver=myresolver"
+#     TODO: Migrate DNS, then uncomment and test.
 
   vocbench-graphdb:
     image: "graphdb-with-st-sails:${GDB_VERSION}"
