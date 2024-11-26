@@ -47,8 +47,11 @@ services:
       - "traefik.http.routers.showvoc.rule=Host(`${SV_DOMAIN}`)"
       - "traefik.http.routers.showvoc.entrypoints=websecure"
       - "traefik.http.routers.showvoc.tls.certresolver=myresolver"
-#     - "traefik.http.routers.showvoc.middlewares=showvoc-add-prefix"
-#     - "traefik.http.middlewares.showvoc-add-prefix.addprefix.prefix=/showvoc/"
+      # Redirect / to /showvoc
+      - "traefik.http.middlewares.redirect-root-to-showvoc.redirectregex.regex=^https?://${SV_DOMAIN}/?$"
+      - "traefik.http.middlewares.redirect-root-to-showvoc.redirectregex.replacement=https://${SV_DOMAIN}/showvoc"
+      - "traefik.http.middlewares.redirect-root-to-showvoc.redirectregex.permanent=true"
+      - "traefik.http.routers.showvoc.middlewares=redirect-root-to-showvoc"
 
   vocbench:
     image: "vocbench3:${VB_VERSION}"
@@ -73,8 +76,11 @@ services:
       - "traefik.http.routers.vocbench.rule=Host(`${VB_DOMAIN}`)"
       - "traefik.http.routers.vocbench.entrypoints=websecure"
       - "traefik.http.routers.vocbench.tls.certresolver=myresolver"
-#     - "traefik.http.routers.vocbench.middlewares=add-vocbench"
-#     - "traefik.http.middlewares.add-vocbench.addprefix.prefix=/vocbench3"
+      # Redirect / to /vocbench3
+      - "traefik.http.middlewares.redirect-root-to-vocbench.redirectregex.regex=^https?://${VB_DOMAIN}/?$"
+      - "traefik.http.middlewares.redirect-root-to-vocbench.redirectregex.replacement=https://${VB_DOMAIN}/vocbench3"
+      - "traefik.http.middlewares.redirect-root-to-vocbench.redirectregex.permanent=true"
+      - "traefik.http.routers.vocbench.middlewares=redirect-root-to-vocbench"
 
   vocbench-graphdb:
     image: "graphdb-with-st-sails:${GDB_VERSION}"
