@@ -8,8 +8,8 @@
 #   DESCRIPTION: This file contains utility SSH functions for more clarity in
 #                scripts.
 # 
-#        AUTHOR: Nicolas Broussard (nico.broussard@gmail.com)
-#  ORGANIZATION: Together for good!
+#        AUTHOR: Nicolas Broussard (nicolas@togetherfor.it)
+#  ORGANIZATION: Together for it
 #       CREATED: 08/28/21 15:41:02 CEST
 #===============================================================================
 
@@ -34,6 +34,7 @@ ssh_user="debian"
 ssh_workdir="/srv/dfc"
 
 # Execute a command on remote server by SSH
+# Usage: ssh_exec "echo example" [--dry-run]
 function ssh_exec {
     declare ssh_command=$1
     declare dry_run=${2:-}
@@ -56,6 +57,7 @@ function ssh_exec {
 }
 
 # Execute a script on remote server by SSH
+# Usage: ssh_exec "path/to/script.sh" [--dry-run]
 function ssh_exec_script {
     declare ssh_script=$1
     declare dry_run=${2:-}
@@ -78,6 +80,7 @@ function ssh_exec_script {
 }
 
 # Copy file from source to remote target (<ssh_user>@<ssh_ip>:<ssh_workdir>)
+# Usage: ssh_copy_to_remote path/to/source path/to/destination [--dry-run]
 function ssh_copy_to_remote {
     declare source=$1
     declare target=$2
